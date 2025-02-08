@@ -8,6 +8,6 @@ bs4
 requests
 textblob
 vaderSentiment
-scipy 1.15.1
+scipy
 numpy
 sklearn
