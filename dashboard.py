@@ -62,6 +62,8 @@ if keywords:
 
     if not df.empty:
         #feature engineering
+        company_name = st.container()
+        company_name.title(df['Company Review'][0])
         df = al.feature_data(df)
         df = al.clean_text(df)
         df = al.sentiment_analysis(df)
