@@ -26,7 +26,7 @@ Trustpilot Review Analyzer is a **Streamlit-powered web application** that scrap
 ## 🎥 Live Demo
 🔗 Access the application here: **[trustpilotanalysis](https://trustpilotanalysis.streamlit.app/)**  
 
-![App Screenshot](#)  
+![App Screenshot](https://hyder.im/wp-content/uploads/2025/02/Screenshot-4-2048x1180.png)  
 
 ## 🛠 How It Works
 1. Open the **[Trustpilot Review Analyzer](https://trustpilotanalysis.streamlit.app/)** in your browser.
