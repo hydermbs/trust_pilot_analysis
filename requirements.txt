@@ -10,4 +10,4 @@ textblob
 vaderSentiment
 scipy
 numpy
-sklearn
+scikit-learn
