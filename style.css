@@ -11,7 +11,7 @@ body {
 
 /* Title styling */
 .stApp h1 {
-    color: #49784b;
+    color: #9ff6d3;
     font-size: 2.5rem;
     font-weight: bold;
     margin-bottom: 1rem;
@@ -19,7 +19,7 @@ body {
 
 /* Sidebar styling */
 .stSidebar {
-    background-color: #49784b;
+    background-color: #9ff6d3;
     color: #ffffff;  /* Sidebar text color set to white */
     padding: 1rem;
 }
@@ -48,7 +48,7 @@ body {
 }
 
 .stColumn h3 {
-    color: #49784b;
+    color: #9ff6d3;
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
 }
@@ -92,7 +92,7 @@ body {
 
 /* Custom header styling */
 .stHeader {
-    color: #49784b;
+    color: #9ff6d3;
     font-size: 1.8rem;
     font-weight: bold;
     margin-bottom: 1rem;
