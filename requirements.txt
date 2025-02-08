@@ -1,0 +1,13 @@
+matplotlib
+seaborn
+pandas
+nltk
+wordcloud
+plotly.express
+bs4
+requests
+textblob
+vaderSentiment
+scipy.stats
+numpy
+sklearn
