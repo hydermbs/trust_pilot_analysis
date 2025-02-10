@@ -59,15 +59,19 @@ def sentiment_counts(df):
 def sentiment_intensity(df):
     #get most Common Positive and Negative Words
     analyzer = SentimentIntensityAnalyzer()
+    vectorizer = CountVectorizer(ngram_range=(2,3),stop_words='english')
+    texts = df['cleaned_text'].astype('str').to_list()
+    X = vectorizer.fit_transform(texts)
+    phrases = vectorizer.get_feature_names_out()
     positive_words = []
     negative_words = []
-    for text in df['cleaned_text']:
-        for word in text.split():
-            score = analyzer.polarity_scores(word)['compound']
-            if score >0.2:
-                positive_words.append(word)
-            elif score < -0.2:
-                negative_words.append(word)
+
+    for phrase in phrases:
+        score = analyzer.polarity_scores(phrase)['compound']
+        if score >0.2:
+            positive_words.append(phrase)
+        elif score < -0.2:
+            negative_words.append(phrase)
     most_common_positive_words = Counter(positive_words).most_common(20)
     most_common_negative_words = Counter(negative_words).most_common(20)
     positive_word, positive_words_frequencies = zip(*most_common_positive_words)
