@@ -1,10 +1,11 @@
 import nltk
 from textblob import TextBlob
-from langchain_huggingface import HuggingFaceEndpoint
-from langchain import PromptTemplate, LLMChain
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from collections import Counter
 import re
 import pandas as pd
 from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import zscore
@@ -12,12 +13,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import plotly.express as px
+from sklearn.feature_extraction.text import CountVectorizer
+
 
 
 def feature_data(df):
+    df['ratingValue'] = pd.to_numeric(df['ratingValue'],errors='coerce')
     df[['Dates','Time']] = df['Date'].str.split('T',expand=True)
-    df['Dates'] = pd.to_datetime(df['Dates'])
-    df['Year'] = df['Dates'].dt.year
     df.drop(columns=['Date','Time'],inplace=True)
     return df
 
@@ -56,35 +58,83 @@ def sentiment_counts(df):
     ax.legend(sentiment_counts['Sentiment'])
     return fig
 
+def sentiment_intensity(df):
+    #get most Common Positive and Negative Words
+    analyzer = SentimentIntensityAnalyzer()
+    vectorizer = CountVectorizer(ngram_range=(2,3),stop_words='english')
+    texts = df['cleaned_text'].astype('str').to_list()
+    X = vectorizer.fit_transform(texts)
+    phrases = vectorizer.get_feature_names_out()
+    positive_words = []
+    negative_words = []
+
+    for phrase in phrases:
+        score = analyzer.polarity_scores(phrase)['compound']
+        if score >0.2:
+            positive_words.append(phrase)
+        elif score < -0.2:
+            negative_words.append(phrase)
+    most_common_positive_words = Counter(positive_words).most_common(20)
+    most_common_negative_words = Counter(negative_words).most_common(20)
+    positive_word, positive_words_frequencies = zip(*most_common_positive_words)
+    negative_word, negative_words_frequencies = zip(*most_common_negative_words)
+    df_words = pd.DataFrame({'Positive_words':positive_word, 'positive_words_frequencies':positive_words_frequencies,'negative_words':negative_word,'negative_words_frequencies':negative_words_frequencies})
+    return df_words
+
+#Positive Word Chart
+def positive_words(df_words, ax=None):
+    sns.set(style='whitegrid')
+
+    # Create a new figure only if ax is not provided
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10,6))
+    else:
+        fig = ax.figure  # Get the figure from the provided Axes
+
+    sns.barplot(x=df_words['positive_words_frequencies'], 
+                y=df_words['Positive_words'], 
+                palette='viridis', 
+                orient='h', 
+                ax=ax)
+
+    # Add text labels to bars
+    for i, value in enumerate(df_words['positive_words_frequencies']):
+        ax.text(value, i, f"{value}", va='center', ha='left', fontsize=12)
+
+    ax.set_xlabel('Frequency', fontsize=12)
+    ax.set_ylabel('Words', fontsize=12)
+    
+    plt.tight_layout()  # Ensure proper layout
+
+    return fig 
 
 
+#Negative Words Chart
+def negative_Words(df_words, ax=None):
+    sns.set(style='whitegrid')
 
-def suggestion(df):
-    reviews = df['cleaned_text'].tolist()
-    token = "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"
-    repo_id="mistralai/Mistral-7B-Instruct-v0.2"
-    llm=HuggingFaceEndpoint(repo_id=repo_id,max_length=128,temperature=0.7,huggingfacehub_api_token=token)
+    # Create a new figure only if ax is not provided
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10,6))
+    else:
+        fig = ax.figure  # Get the figure from the provided Axes
 
-    def summarize_reviews(review_list):
-        template = """
-        Analyze the following customer reviews and identify the top 5 issues or areas summerize them in 6 words that need improvement. Provide a concise and actionable list of suggestions for the company to address these issues. Focus on recurring themes, specific pain points, and areas where customer satisfaction is lacking. Format the output as a numbered list, with each item being a clear and actionable recommendation not more than 6 words.
-        also suggest the frequency of each issue like how many times that comes in complain
-        Reviews:
-        {reviews}
-        """
-        prompt = PromptTemplate(template=template, input_variables=["reviews"])
-        llm_chain = LLMChain(llm=llm, prompt=prompt)
-        
-        # Join the reviews into a single string
-        reviews_text = "\n".join(review_list)
-        return llm_chain.invoke({"reviews": reviews_text})
+    sns.barplot(x=df_words['negative_words_frequencies'], 
+                y=df_words['negative_words'], 
+                palette='rocket', 
+                orient='h', 
+                ax=ax)
 
-    # Summarize all reviews together
-    all_reviews_summary = summarize_reviews(reviews)
-    return all_reviews_summary['text']
+    # Add text labels to bars
+    for i, value in enumerate(df_words['negative_words_frequencies']):
+        ax.text(value, i, f"{value}", va='center', ha='left', fontsize=12)
 
+    ax.set_xlabel('Frequency', fontsize=12)
+    ax.set_ylabel('Words', fontsize=12)
+    
+    plt.tight_layout()  # Ensure proper layout
 
-
+    return fig  # Return the figure instead of showing it
 
 def rating_counts(df):
     rating_counts = df['ratingValue'].value_counts().sort_index()
@@ -131,4 +181,3 @@ def suspicious_comment(df):
     ax.pie(suspicious_counts['count'],labels=suspicious_counts['is_suspicious'], startangle=90, autopct='%1.1f%%',colors=sns.color_palette('viridis'), shadow=True, textprops={'color':'w'})
     ax.legend(suspicious_counts['is_suspicious'])
     return fig
-
