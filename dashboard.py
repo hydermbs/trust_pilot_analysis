@@ -65,7 +65,7 @@ if keywords:
         company_name = st.container()
         company_name.title(df['Company Review'][0])
         df = al.feature_data(df)
-        df = al.clean_text(df)
+        df = al.cleaned_data(df)
         df = al.sentiment_analysis(df)
         basic_container = st.container()
         with basic_container:
@@ -80,4 +80,3 @@ if keywords:
         review_over_time = st.container()
         review_over_time.plotly_chart(al.number_of_reviews_over_time(df))
         st.write(df)
-
