@@ -5,6 +5,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import time
 
+st.set_page_config(layout="wide")
+
 st.markdown('<style>{}</style>'.format(open("style.css").read()), unsafe_allow_html=True)
 
 
