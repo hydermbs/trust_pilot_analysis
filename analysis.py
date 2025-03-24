@@ -14,7 +14,19 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import plotly.express as px
 from sklearn.feature_extraction.text import CountVectorizer
+from nltk.stem import WordNetLemmatizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 
+
+
+
+nltk.download('averaged_perceptron_tagger') 
+nltk.download('punkt')
+lemmatizer = WordNetLemmatizer()
+nltk.download('vader_lexicon')
+nltk.download('stopwords')
+nltk.download('wordnet')
+sia = SentimentIntensityAnalyzer()
 
 
 def feature_data(df):
@@ -23,19 +35,22 @@ def feature_data(df):
     df.drop(columns=['Date','Time'],inplace=True)
     return df
 
-def clean_text(df):
-    nltk.download('stopwords')
-    nltk.download('punkt')
-    stop_words = set(stopwords.words('english'))
 
-    def process_text(text):
-        text = text.lower()
-        text = re.sub(r'[^a-zA-Z\s]','',text)
-        words = text.split()
-        words = [word for word in words if word not in stop_words]
-        return " ".join(words)
+def preprocess_text(text):
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Remove special characters & extra spaces
+    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    # Lemmatization
+    text = " ".join([lemmatizer.lemmatize(word) for word in text.split()])
+    
+    return text
 
-    df['cleaned_text'] = df['reviewBody'].apply(process_text)
+def cleaned_data(df):
+    df['cleaned_text'] = df['reviewBody'].astype(str).apply(preprocess_text)
     return df
 
 def sentiment_analysis(df):
@@ -47,7 +62,6 @@ def sentiment_analysis(df):
         elif analysis.sentiment.polarity < 0:
             return 'Negative'
         else: return 'Neutral'
-
     df['Sentiment'] = df['cleaned_text'].apply(get_sentiment)
     return df
 
@@ -59,26 +73,46 @@ def sentiment_counts(df):
     return fig
 
 def sentiment_intensity(df):
-    #get most Common Positive and Negative Words
+    # Initialize Sentiment Analyzer and Vectorizer
     analyzer = SentimentIntensityAnalyzer()
-    vectorizer = CountVectorizer(ngram_range=(2,3),stop_words='english')
-    texts = df['cleaned_text'].astype('str').to_list()
-    X = vectorizer.fit_transform(texts)
-    phrases = vectorizer.get_feature_names_out()
-    positive_words = []
-    negative_words = []
+    vectorizer = CountVectorizer(ngram_range=(2, 3), stop_words='english')
 
-    for phrase in phrases:
-        score = analyzer.polarity_scores(phrase)['compound']
-        if score >0.2:
-            positive_words.append(phrase)
-        elif score < -0.2:
-            negative_words.append(phrase)
-    most_common_positive_words = Counter(positive_words).most_common(20)
-    most_common_negative_words = Counter(negative_words).most_common(20)
-    positive_word, positive_words_frequencies = zip(*most_common_positive_words)
-    negative_word, negative_words_frequencies = zip(*most_common_negative_words)
-    df_words = pd.DataFrame({'Positive_words':positive_word, 'positive_words_frequencies':positive_words_frequencies,'negative_words':negative_word,'negative_words_frequencies':negative_words_frequencies})
+    # Fit and transform the entire corpus
+    X = vectorizer.fit_transform(df['cleaned_text'].astype(str))
+    phrases = vectorizer.get_feature_names_out()
+
+    # Calculate sentiment scores for each phrase
+    phrase_sentiments = {phrase: analyzer.polarity_scores(phrase)['compound'] for phrase in phrases}
+
+    # Separate positive and negative phrases
+    positive_phrases = [phrase for phrase, score in phrase_sentiments.items() if score > 0.2]
+    negative_phrases = [phrase for phrase, score in phrase_sentiments.items() if score < -0.2]
+
+    # Count the frequency of each phrase in the corpus
+    all_reviews = df['cleaned_text'].astype(str).tolist()
+    positive_counts = Counter()
+    negative_counts = Counter()
+
+    for review in all_reviews:
+        review_phrases = review.split()
+        for phrase in positive_phrases:
+            if phrase in review:
+                positive_counts[phrase] += 1
+        for phrase in negative_phrases:
+            if phrase in review:
+                negative_counts[phrase] += 1
+
+    # Get the most common positive and negative phrases
+    top_positive = positive_counts.most_common(20)
+    top_negative = negative_counts.most_common(20)
+
+    # Create DataFrames for positive and negative phrases
+    df_positive = pd.DataFrame(top_positive, columns=['Positive_words', 'positive_words_frequencies'])
+    df_negative = pd.DataFrame(top_negative, columns=['negative_words', 'negative_words_frequencies'])
+
+    # Merge the DataFrames
+    df_words = pd.concat([df_positive, df_negative], axis=1)
+
     return df_words
 
 #Positive Word Chart
